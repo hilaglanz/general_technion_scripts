@@ -34,10 +34,12 @@ def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
             hours = random.randint(min_daily[i],max_daily[i])
             working_tab[c+str(row)] = hours
             filled_cells[i] = hours
+            max_daily[i] -= hours
             total -= hours
         else:
             working_tab[c + str(row)] = total
             filled_cells[i] = total
+            max_daily[i] -= total
             total = 0
             break
 
@@ -48,10 +50,11 @@ def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
                 filled_cells[i] += hours
                 working_tab[c+str(row)] = filled_cells[i]
                 total -= hours
+                max_daily[i] -= hours
             if total == 0:
                 break
 
-    return filled_cells
+    return filled_cells, max_daily
 
 def calculate_and_fill_teaching_days(working_tab,relevant_columns,teaching_days_and_hours):
     teaching_hours = 0
@@ -138,6 +141,7 @@ if __name__ == "__main__":
         try:
             teaching_days_and_hours_dict = derive_teaching_dict(args.teaching_days_and_hours)
             monthly_teaching_hours, filled_teaching = calculate_and_fill_teaching_days(working_tab,relevant_cells,teaching_days_and_hours_dict)
+            daily_max_hours = [daily_max_hours[i]-filled_teaching[i] for i in range(len(filled_teaching))]
         except:
             print("Could not fill in teaching hours, check the format of your supplied dictionary, "
                   "it should look like- {1:2,4:1} for teaching 2 hours on Sunday and one hour on Wednesday")
@@ -153,14 +157,11 @@ if __name__ == "__main__":
     print("calculated total hours, ERC hours and other project this month:")
     print(monthly_hours, monthly_ERC_hours, monthly_other_hours)
 
-    daily_max_hours = [max(0,daily_max_hours[i] - filled_teaching[i]) for i in range(len(relevant_cells))] # updating current daily max
-    filled_ERC = fill_line(working_tab,ERC_project_line,relevant_cells,monthly_ERC_hours,
+    filled_ERC, daily_max_hours = fill_line(working_tab,ERC_project_line,relevant_cells,monthly_ERC_hours,
                            [0 for i in range(len(relevant_cells))], daily_max_hours)
-    daily_max_hours = [max(0,daily_max_hours[i] - filled_ERC[i]) for i in range(len(relevant_cells))] # updating current daily max
 
-    filled_others = fill_line(working_tab,other_projects_line,relevant_cells,monthly_other_hours,
+    filled_others, daily_max_hours = fill_line(working_tab,other_projects_line,relevant_cells,monthly_other_hours,
               [max(0,args.min_daily_hours - filled_ERC[i] - filled_teaching[i]- max_admin_daily_hours) for i in range(len(filled_ERC))], daily_max_hours)
-    daily_max_hours = [max(0,daily_max_hours[i] - filled_others[i]) for i in range(len(relevant_cells))] # updating current daily max
 
     if args.is_admin:
         fill_line(working_tab,admin_line, relevant_cells, monthly_admin_hours,
