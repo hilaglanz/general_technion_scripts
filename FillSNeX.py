@@ -14,7 +14,7 @@ halfday_color_cell = "B45"
 month_cell = "I9"
 half_day_optional_color = "FFFFCCFF"
 half_day_hours = 5
-months = {1:"Jan",2:"Feb", 3:"March", 4:"April",5:"May",6:"Jun", 7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov", 12:"Dec"}
+months = {1:"Jan",2:"Feb", 3:"Mar", 4:"Apr",5:"May",6:"Jun", 7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov", 12:"Dec"}
 
 
 def derive_teaching_dict(teaching_days_and_hours_list):
@@ -112,8 +112,9 @@ def calculate_total_working_hours(working_tab, personal_max_hours):
 def InitParser():
     parser = argparse.ArgumentParser(description='Welcome to the automatic SNex filler!')
     parser.add_argument('--document_path', type=str, required=True ,help='path to the excel sheet to be filled')
-    parser.add_argument('--tab', type=int, default=9 ,help='internal tab of the Excel sheet')
-    parser.add_argument('--ERC_percentage', type=float, default=67 ,help='percentage of time working on the ERC projects')
+    parser.add_argument('--tab', type=int, default=9 ,help='The number of the required month, for example 1 for January, 5 for May')
+    parser.add_argument('--months', nargs='+', type=int, default=[] ,help='list of month indices')
+    parser.add_argument('--ERC_percentage', type=float, default=100 ,help='percentage of time working on the ERC projects')
     parser.add_argument('--average_daily_hours', type=float, default=8, help='The average hours working a day')
     parser.add_argument('--min_daily_hours', type=float, default=2, help='The minimal hours working a day')
     parser.add_argument('--max_daily_hours', type=float, default=9, help='The maximal hours working a day')
@@ -121,7 +122,10 @@ def InitParser():
     parser.add_argument('--average_admin_daily_hours', type=float, default=1, help='The average administrative hours working a day')
     parser.add_argument('--min_admin_daily_hours', type=float, default=0, help='The minimal administrative hours working a day')
     parser.add_argument('--max_admin_daily_hours', type=float, default=4, help='The maximal administrative hours working a day')
-    parser.add_argument('--teaching_days_and_hours', type=str, default={}, help='a dictionary with the teaching day number as the key (Sunday is 1) and the value is number of hours, the form is {1:2, 4:3}')
+    parser.add_argument('--teaching_days_and_hours', type=str, default={}, help='a dictionary with the teaching day '
+                                                                                'number as the key (Sunday is 1) and '
+                                                                                'the value is number of hours, '
+                                                                                'the form is {1:2, 4:3}')
     return parser
 
 
@@ -129,46 +133,52 @@ if __name__ == "__main__":
     parser = InitParser()
     args = parser.parse_args()
     workbook = load_workbook(args.document_path)
-    working_tab = workbook.get_sheet_by_name(months[args.tab])
-    monthly_hours, relevant_cells, daily_max_hours = calculate_total_working_hours(working_tab, args.max_daily_hours)
-
-    monthly_teaching_hours = 0
-    max_admin_daily_hours = 0
-    filled_teaching = [0 for i in range(len(relevant_cells))]
-    if args.is_admin:
-        print("Hello manager! It is now time to fill in the administrative working hours.")
-        print("Notice that we assume that teaching happens even in half days and there is no such thing as \"MATKONET\"")
-        try:
-            teaching_days_and_hours_dict = derive_teaching_dict(args.teaching_days_and_hours)
-            monthly_teaching_hours, filled_teaching = calculate_and_fill_teaching_days(working_tab,relevant_cells,teaching_days_and_hours_dict)
-            daily_max_hours = [daily_max_hours[i]-filled_teaching[i] for i in range(len(filled_teaching))]
-        except:
-            print("Could not fill in teaching hours, check the format of your supplied dictionary, "
-                  "it should look like- {1:2,4:1} for teaching 2 hours on Sunday and one hour on Wednesday")
-        monthly_admin_hours = args.average_admin_daily_hours*len(relevant_cells)
-        max_admin_daily_hours = args.max_admin_daily_hours
+    if len(args.months) == 0:
+        months_n = [args.tab]
     else:
-        monthly_admin_hours = 0
+        months_n = args.months
+
+    for month_n in months_n:
+        working_tab = workbook.get_sheet_by_name(months[month_n])
+        monthly_hours, relevant_cells, daily_max_hours = calculate_total_working_hours(working_tab, args.max_daily_hours)
+
         monthly_teaching_hours = 0
+        max_admin_daily_hours = 0
+        filled_teaching = [0 for i in range(len(relevant_cells))]
+        if args.is_admin:
+            print("Hello manager! It is now time to fill in the administrative working hours.")
+            print("Notice that we assume that teaching happens even in half days and there is no such thing as \"MATKONET\"")
+            try:
+                teaching_days_and_hours_dict = derive_teaching_dict(args.teaching_days_and_hours)
+                monthly_teaching_hours, filled_teaching = calculate_and_fill_teaching_days(working_tab,relevant_cells,teaching_days_and_hours_dict)
+                daily_max_hours = [daily_max_hours[i]-filled_teaching[i] for i in range(len(filled_teaching))]
+            except:
+                print("Could not fill in teaching hours, check the format of your supplied dictionary, "
+                      "it should look like- {1:2,4:1} for teaching 2 hours on Sunday and one hour on Wednesday")
+            monthly_admin_hours = args.average_admin_daily_hours*len(relevant_cells)
+            max_admin_daily_hours = args.max_admin_daily_hours
+        else:
+            monthly_admin_hours = 0
+            monthly_teaching_hours = 0
 
-    monthly_ERC_hours = math.ceil(monthly_hours * args.ERC_percentage / 100.0)
-    monthly_other_hours = monthly_hours - monthly_ERC_hours - monthly_admin_hours - monthly_teaching_hours
+        monthly_ERC_hours = math.ceil(monthly_hours * args.ERC_percentage / 100.0)
+        monthly_other_hours = monthly_hours - monthly_ERC_hours - monthly_admin_hours - monthly_teaching_hours
 
-    print("calculated total hours, ERC hours and other project this month:")
-    print(monthly_hours, monthly_ERC_hours, monthly_other_hours)
+        print("calculated total hours, ERC hours and other project this month:")
+        print(monthly_hours, monthly_ERC_hours, monthly_other_hours)
 
-    filled_ERC, daily_max_hours = fill_line(working_tab,ERC_project_line,relevant_cells,monthly_ERC_hours,
-                           [0 for i in range(len(relevant_cells))], daily_max_hours)
+        filled_ERC, daily_max_hours = fill_line(working_tab,ERC_project_line,relevant_cells,monthly_ERC_hours,
+                               [0 for i in range(len(relevant_cells))], daily_max_hours)
 
-    filled_others, daily_max_hours = fill_line(working_tab,other_projects_line,relevant_cells,monthly_other_hours,
-              [max(0,args.min_daily_hours - filled_ERC[i] - filled_teaching[i]- max_admin_daily_hours) for i in range(len(filled_ERC))], daily_max_hours)
+        filled_others, daily_max_hours = fill_line(working_tab,other_projects_line,relevant_cells,monthly_other_hours,
+                  [max(0,args.min_daily_hours - filled_ERC[i] - filled_teaching[i]- max_admin_daily_hours) for i in range(len(filled_ERC))], daily_max_hours)
 
-    if args.is_admin:
-        fill_line(working_tab,admin_line, relevant_cells, monthly_admin_hours,
-              [args.min_admin_daily_hours for i in range(len(relevant_cells))],
-              [min(args.max_admin_daily_hours, daily_max_hours[i]) for i in range(len(relevant_cells))])
+        if args.is_admin:
+            fill_line(working_tab,admin_line, relevant_cells, monthly_admin_hours,
+                  [args.min_admin_daily_hours for i in range(len(relevant_cells))],
+                  [min(args.max_admin_daily_hours, daily_max_hours[i]) for i in range(len(relevant_cells))])
 
     workbook.save(args.document_path.replace('.xlsx','_filled.xlsx'))
 
-    print("filled form for month",months[args.tab], " saved as ", args.document_path.replace('.xlsx','_filled.xlsx'))
+    print("filled form saved as ", args.document_path.replace('.xlsx','_filled.xlsx'))
 
