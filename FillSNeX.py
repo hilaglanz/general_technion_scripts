@@ -59,7 +59,6 @@ def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
 def calculate_and_fill_teaching_days(working_tab,relevant_columns,teaching_days_and_hours):
     teaching_hours = 0
     teaching_days = teaching_days_and_hours.keys()
-    print("teaching days: ",teaching_days)
     columns = [0 for i in range(len(relevant_cells))]
     for i, c in enumerate(relevant_columns):
         first_month_date = working_tab[month_cell]
