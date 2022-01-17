@@ -59,6 +59,7 @@ def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
 def calculate_and_fill_teaching_days(working_tab,relevant_columns,teaching_days_and_hours):
     teaching_hours = 0
     teaching_days = teaching_days_and_hours.keys()
+    print("teaching days: ",teaching_days)
     columns = [0 for i in range(len(relevant_cells))]
     for i, c in enumerate(relevant_columns):
         first_month_date = working_tab[month_cell]
@@ -118,7 +119,8 @@ def InitParser():
     parser.add_argument('--average_daily_hours', type=float, default=8, help='The average hours working a day')
     parser.add_argument('--min_daily_hours', type=float, default=2, help='The minimal hours working a day')
     parser.add_argument('--max_daily_hours', type=float, default=9, help='The maximal hours working a day')
-    parser.add_argument('--is_admin', type=bool, default=False, help='True if you are have additional administrative works, ignoring all administrative values if false')
+    parser.add_argument('--is_admin', type=lambda x: (str(x).lower() in ['true', '1', 'yes']), default=False,
+                        help='True if you are have additional administrative works, ignoring all administrative values if false')
     parser.add_argument('--average_admin_daily_hours', type=float, default=1, help='The average administrative hours working a day')
     parser.add_argument('--min_admin_daily_hours', type=float, default=0, help='The minimal administrative hours working a day')
     parser.add_argument('--max_admin_daily_hours', type=float, default=4, help='The maximal administrative hours working a day')
