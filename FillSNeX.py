@@ -5,10 +5,12 @@ import math
 import random
 
 date_line = 13
+'''
 ERC_project_line = 15
 other_projects_line = 28
 teaching_line = 29
 admin_line = 30
+'''
 holiday_color_cell = "B44"
 halfday_color_cell = "B45"
 month_cell = "I9"
@@ -24,6 +26,25 @@ def derive_teaching_dict(teaching_days_and_hours_list):
         teaching_days_and_hours_dict[int(splitted_pair[0])] = int(splitted_pair[1])
 
     return teaching_days_and_hours_dict
+
+def get_lines(working_tab):
+    found_ERC=False
+    for i in range(10,45):
+        if (not found_ERC) and (working_tab["A" + str(i)].value == "ERC"):
+            ERC_project_line = i
+            found_ERC=True
+        if working_tab["A" + str(i)].value == "Other projects":
+            other_projects_line = i
+        if working_tab["A" + str(i)].value == "General training and courses":
+            teaching_line = i
+        if working_tab["A" + str(i)].value == "General administration":
+            admin_line = i
+    print("ERC line= ", ERC_project_line)
+    print("other projects line= ", other_projects_line)
+    print("teaching line= ", teaching_line)
+    print("admin line= ", admin_line)
+
+    return ERC_project_line, other_projects_line, teaching_line, admin_line
 
 def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
     filled_cells = [0 for c in relevant_columns]
@@ -146,6 +167,7 @@ if __name__ == "__main__":
 
     for month_n in months_n:
         working_tab = workbook.get_sheet_by_name(months[month_n] + year_append)
+        ERC_project_line, other_projects_line, teaching_line, admin_line = get_lines(working_tab)
         monthly_hours, relevant_cells, daily_max_hours = calculate_total_working_hours(working_tab, args.max_daily_hours)
 
         monthly_teaching_hours = 0
