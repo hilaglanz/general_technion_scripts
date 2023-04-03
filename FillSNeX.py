@@ -114,6 +114,7 @@ def InitParser():
     parser.add_argument('--document_path', type=str, required=True ,help='path to the excel sheet to be filled')
     parser.add_argument('--tab', type=int, default=9 ,help='The number of the required month, for example 1 for January, 5 for May')
     parser.add_argument('--months', nargs='+', type=int, default=[] ,help='list of month indices')
+    parser.add_argument('--year', type=str, default=None, help='year appended to the month short name in the relevant tabs')
     parser.add_argument('--ERC_percentage', type=float, default=100 ,help='percentage of time working on the ERC projects')
     parser.add_argument('--average_daily_hours', type=float, default=8, help='The average hours working a day')
     parser.add_argument('--min_daily_hours', type=float, default=2, help='The minimal hours working a day')
@@ -139,8 +140,12 @@ if __name__ == "__main__":
     else:
         months_n = args.months
 
+    year_append = ""
+    if args.year is not None:
+        year_append = " " + args.year
+
     for month_n in months_n:
-        working_tab = workbook.get_sheet_by_name(months[month_n])
+        working_tab = workbook.get_sheet_by_name(months[month_n] + year_append)
         monthly_hours, relevant_cells, daily_max_hours = calculate_total_working_hours(working_tab, args.max_daily_hours)
 
         monthly_teaching_hours = 0
