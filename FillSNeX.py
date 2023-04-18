@@ -44,7 +44,16 @@ def get_lines(working_tab):
     print("teaching line= ", teaching_line)
     print("admin line= ", admin_line)
 
-    return ERC_project_line, other_projects_line, teaching_line, admin_line
+    for i in range(43, 50):
+        if working_tab["C" + str(i)].value == "weekend":
+            weekend_color_cell = "B" + str(i)
+        if working_tab["C" + str(i)].value == "holiday":
+            holiday_color_cell = "B" + str(i)
+        if working_tab["C" + str(i)].value == "half day":
+            halfday_color_cell = "B" + str(i)
+            break
+
+    return ERC_project_line, other_projects_line, teaching_line, admin_line, weekend_color_cell, holiday_color_cell, halfday_color_cell
 
 def fill_line(working_tab, row, relevant_columns, total, min_daily, max_daily):
     filled_cells = [0 for c in relevant_columns]
@@ -167,7 +176,8 @@ if __name__ == "__main__":
 
     for month_n in months_n:
         working_tab = workbook.get_sheet_by_name(months[month_n] + year_append)
-        ERC_project_line, other_projects_line, teaching_line, admin_line = get_lines(working_tab)
+        ERC_project_line, other_projects_line, teaching_line, admin_line, weekend_color_cell, holiday_color_cell, \
+            halfday_color_cell = get_lines(working_tab)
         monthly_hours, relevant_cells, daily_max_hours = calculate_total_working_hours(working_tab, args.max_daily_hours)
 
         monthly_teaching_hours = 0
